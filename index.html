@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>월간 학사 및 업무 일정 달력</title>
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --sunday-color: #ef4444;
+      --saturday-color: #3b82f6;
+      --today-bg: #eff6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* 상단 헤더 영역 */
+    header {
+      background: var(--card-bg);
+      padding: 20px 24px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .calendar-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .nav-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: #e2e8f0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    select, .refresh-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      font-size: 0.9rem;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .refresh-btn {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    /* 로딩 및 알림 상태 */
+    #statusMessage {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      text-align: right;
+    }
+
+    /* 달력 그리드 */
+    .calendar-wrapper {
+      background: var(--card-bg);
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .weekdays-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f8fafc;
+      border-bottom: 2px solid var(--border-color);
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .weekday {
+      padding: 14px 4px;
+    }
+
+    .weekday.sun { color: var(--sunday-color); }
+    .weekday.sat { color: var(--saturday-color); }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: minmax(130px, auto);
+    }
+
+    .day-cell {
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+
+    .day-cell:nth-child(7n) {
+      border-right: none;
+    }
+
+    .day-cell.other-month {
+      background-color: #fafbfc;
+      opacity: 0.4;
+    }
+
+    .day-cell.today {
+      background-color: var(--today-bg);
+    }
+
+    .date-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .day-number {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      text-align: center;
+      border-radius: 50%;
+    }
+
+    .day-cell.sun .day-number { color: var(--sunday-color); }
+    .day-cell.sat .day-number { color: var(--saturday-color); }
+
+    .day-cell.today .day-number {
+      background: var(--primary-color);
+      color: #fff !important;
+    }
+
+    /* 행사 일정 뱃지 */
+    .events-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      max-height: 140px;
+    }
+
+    .event-item {
+      font-size: 0.78rem;
+      line-height: 1.35;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background-color: #f1f5f9;
+      border-left: 3px solid #64748b;
+      color: #0f172a;
+      cursor: pointer;
+      word-break: break-all;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .event-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .dept-badge {
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
+    /* 부서별 색상 구분 */
+    .dept-color-0 { border-left-color: #2563eb; background: #eff6ff; }
+    .dept-color-1 { border-left-color: #059669; background: #ecfdf5; }
+    .dept-color-2 { border-left-color: #d97706; background: #fffbeb; }
+    .dept-color-3 { border-left-color: #7c3aed; background: #f5f3ff; }
+    .dept-color-4 { border-left-color: #db2777; background: #fdf2f8; }
+    .dept-color-5 { border-left-color: #0891b2; background: #ecfeff; }
+    .dept-color-6 { border-left-color: #ea580c; background: #fff7ed; }
+    .dept-color-7 { border-left-color: #4b5563; background: #f3f4f6; }
+
+    /* 상세 모달 팝업 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 14px;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .modal-body {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    @media (max-width: 768px) {
+      .day-cell { min-height: 90px; padding: 4px; }
+      .day-number { font-size: 0.8rem; width: 22px; height: 22px; line-height: 22px; }
+      .event-item { font-size: 0.7rem; padding: 2px 4px; }
+      .calendar-title { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <h1 class="calendar-title" id="calendarTitle">2026년 9월</h1>
+        <button class="nav-btn" onclick="changeMonth(-1)">◀ 이전 달</button>
+        <button class="nav-btn" onclick="goToday()">오늘</button>
+        <button class="nav-btn" onclick="changeMonth(1)">다음 달 ▶</button>
+      </div>
+
+      <div class="header-right">
+        <select id="deptFilter" onchange="renderCalendar()">
+          <option value="ALL">전체 부서 보기</option>
+        </select>
+        <button class="refresh-btn" onclick="fetchSheetData()">🔄 동기화</button>
+      </div>
+    </header>
+
+    <div id="statusMessage">데이터를 불러오는 중입니다...</div>
+
+    <div class="calendar-wrapper">
+      <div class="weekdays-header">
+        <div class="weekday sun">일</div>
+        <div class="weekday">월</div>
+        <div class="weekday">화</div>
+        <div class="weekday">수</div>
+        <div class="weekday">목</div>
+        <div class="weekday">금</div>
+        <div class="weekday sat">토</div>
+      </div>
+      <div class="days-grid" id="daysGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="eventModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">행사 상세</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // 🔗 대상 구글 시트 ID (공유 설정: 링크가 있는 모든 사용자 - 뷰어 필요)
+    const SPREADSHEET_ID = '1ocPomURcn4lQlTPRu6bl-PQCOR8xNlTTouHQy1Ik6fc';
+    const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=0`;
+
+    let currentDate = new Date();
+    let sheetEvents = []; // { day: 숫자, dept: 부서명, content: 내용 }
+    let departmentList = [];
+
+    // 부서별 고유 색상 지정을 위한 해시 함수
+    function getDeptColorClass(dept) {
+      let hash = 0;
+      for (let i = 0; i < dept.length; i++) {
+        hash = dept.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % 8;
+      return `dept-color-${index}`;
+    }
+
+    // 1. 구글 시트 데이터 가져오기 및 파싱
+    async function fetchSheetData() {
+      const status = document.getElementById('statusMessage');
+      status.innerText = "구글 시트에서 최신 일정을 연동하는 중...";
+
+      try {
+        const res = await fetch(GVIZ_URL);
+        const text = await res.text();
+        
+        // Google Visualization 응답에서 JSON 추출
+        const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+        const data = JSON.parse(jsonString);
+        const rows = data.table.rows;
+
+        if (!rows || rows.length < 3) {
+          status.innerText = "시트에 데이터가 충분하지 않습니다.";
+          return;
+        }
+
+        // 3행 (index 2): C열(index 2)부터 K열(index 10)까지 부서명 읽기
+        departmentList = [];
+        const deptRow = rows[2]?.c || [];
+        for (let col = 2; col < deptRow.length; col++) {
+          const deptName = deptRow[col]?.v || deptRow[col]?.f;
+          if (deptName) {
+            departmentList.push(String(deptName).trim());
+          }
+        }
+
+        // 부서 필터 드롭다운 업데이트
+        const deptFilter = document.getElementById('deptFilter');
+        deptFilter.innerHTML = '<option value="ALL">전체 부서 보기</option>';
+        departmentList.forEach(dept => {
+          const opt = document.createElement('option');
+          opt.value = dept;
+          opt.innerText = dept;
+          deptFilter.appendChild(opt);
+        });
+
+        // 4행 (index 3)부터 부서별 행사 내용 파싱
+        sheetEvents = [];
+        for (let r = 3; r < rows.length; r++) {
+          const rowCells = rows[r]?.c;
+          if (!rowCells) continue;
+
+          // A열 (날짜)
+          const dateCell = rowCells[0];
+          const dayNum = parseDay(dateCell);
+          if (!dayNum) continue;
+
+          // C열부터 K열까지 순회
+          for (let col = 2; col < rowCells.length; col++) {
+            const cell = rowCells[col];
+            const content = cell?.v !== undefined && cell?.v !== null ? String(cell.v).trim() : "";
+
+            if (content) {
+              const deptName = departmentList[col - 2] || "기타";
+              sheetEvents.push({
+                day: dayNum,
+                dept: deptName,
+                content: content
+              });
+            }
+          }
+        }
+
+        status.innerText = `마지막 동기화 완료 (${new Date().toLocaleTimeString('ko-KR')})`;
+        renderCalendar();
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<span style="color:red;">데이터 연동 실패. 시트의 공유 설정이 '링크가 있는 모든 사용자: 뷰어'로 되어 있는지 확인해 주세요.</span>`;
+      }
+    }
+
+    // 날짜 셀에서 일(Day) 번호만 스마트하게 추출
+    function parseDay(cell) {
+      if (!cell) return null;
+      const val = cell.v;
+      const formatted = cell.f;
+
+      // 1) gviz Date(YYYY, M, D) 형태
+      if (typeof val === 'string' && val.startsWith('Date(')) {
+        const parts = val.match(/\d+/g);
+        if (parts && parts.length >= 3) return parseInt(parts[2], 10);
+      }
+
+      // 2) 일반 숫자 (1 ~ 31)
+      if (typeof val === 'number') {
+        if (val >= 1 && val <= 31) return val;
+        // 엑셀 날짜 일련번호 변환
+        const d = new Date((val - 25569) * 86400 * 1000);
+        return d.getDate();
+      }
+
+      // 3) 문자열 (예: "1일", "9/1", "1")
+      const str = String(formatted || val).trim();
+      const numMatch = str.match(/(\d+)\s*일?$/);
+      if (numMatch) return parseInt(numMatch[1], 10);
+
+      return null;
+    }
+
+    // 2. 달력 렌더링
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-based
+
+      document.getElementById('calendarTitle').innerText = `${year}년 ${month + 1}월`;
+
+      const grid = document.getElementById('daysGrid');
+      grid.innerHTML = '';
+
+      const firstDayIndex = new Date(year, month, 1).getDay(); // 이번 달 1일의 요일 (0: 일요일)
+      const lastDate = new Date(year, month + 1, 0).getDate(); // 이번 달 마지막 날짜
+      const prevLastDate = new Date(year, month, 0).getDate(); // 지난 달 마지막 날짜
+
+      const today = new Date();
+      const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+      const selectedDept = document.getElementById('deptFilter').value;
+
+      // 1) 지난 달 날짜 빈칸 채우기
+      for (let i = firstDayIndex; i > 0; i--) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell other-month';
+        dayCell.innerHTML = `<div class="date-header"><span class="day-number">${prevLastDate - i + 1}</span></div>`;
+        grid.appendChild(dayCell);
+      }
+
+      // 2) 이번 달 날짜들 생성
+      for (let day = 1; day <= lastDate; day++) {
+        const cellDate = new Date(year, month, day);
+        const dayOfWeek = cellDate.getDay();
+
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell';
+        if (dayOfWeek === 0) dayCell.classList.add('sun');
+        if (dayOfWeek === 6) dayCell.classList.add('sat');
+        if (isCurrentMonth && today.getDate() === day) dayCell.classList.add('today');
+
+        // 상단 날짜 번호
+        const dateHeader = document.createElement('div');
+        dateHeader.className = 'date-header';
+        dateHeader.innerHTML = `<span class="day-number">${day}</span>`;
+        dayCell.appendChild(dateHeader);
+
+        // 해당 일자의 행사 필터링 및 렌더링
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'events-container';
+
+        const daysEvents = sheetEvents.filter(e => {
+          if (e.day !== day) return false;
+          if (selectedDept !== 'ALL' && e.dept !== selectedDept) return false;
+          return true;
+        });
+
+        daysEvents.forEach(e => {
+          const eventItem = document.createElement('div');
+          eventItem.className = `event-item ${getDeptColorClass(e.dept)}`;
+          eventItem.innerHTML = `<span class="dept-badge">[${e.dept}]</span>${escapeHtml(e.content)}`;
+          
+          // 클릭 시 팝업 열기
+          eventItem.onclick = () => openModal(day, e.dept, e.content);
+          eventsContainer.appendChild(eventItem);
+        });
+
+        dayCell.appendChild(eventsContainer);
+        grid.appendChild(dayCell);
+      }
+
+      // 3) 다음 달 날짜 빈칸 채우기 (총 7의 배수 맞춤)
+      const totalCells = firstDayIndex + lastDate;
+      const nextDays = (7 - (totalCells % 7)) % 7;
+      for (let i = 1; i <= nextDays; i++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell other-month';
+        dayCell.innerHTML = `<div class="date-header"><span class="day-number">${i}</span></div>`;
+        grid.appendChild(dayCell);
+      }
+    }
+
+    // 달 이동
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function goToday() {
+      currentDate = new Date();
+      renderCalendar();
+    }
+
+    // 모달 팝업 열기 / 닫기
+    function openModal(day, dept, content) {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      document.getElementById('modalTitle').innerText = `${year}년 ${month}월 ${day}일 - [${dept}]`;
+      document.getElementById('modalBody').innerText = content;
+      document.getElementById('eventModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('eventModal').style.display = 'none';
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    // 초기 실행
+    window.addEventListener('DOMContentLoaded', fetchSheetData);
+  </script>
+</body>
+</html>
