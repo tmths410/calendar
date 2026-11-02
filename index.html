@@ -513,7 +513,7 @@
         recognizedDeptNames = [];
         const deptRowCells = rows[deptRowIndex]?.c || [];
 
-        for (let col = 2; col <= 10; col++) {
+        for (let col = 2; col <= 11; col++) {
           const cell = deptRowCells[col];
           let deptName = "";
           if (cell) {
@@ -545,7 +545,7 @@
           const dayNum = parseDay(rowCells[0]);
           if (!dayNum) continue;
 
-          for (let col = 2; col <= 10; col++) {
+          for (let col = 2; col <= 11; col++) {
             const cell = rowCells[col];
             if (!cell) continue;
 
